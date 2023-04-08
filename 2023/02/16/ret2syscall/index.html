@@ -25,13 +25,19 @@
 <meta property="og:site_name" content="Xkeo&#39;s Blog">
 <meta property="og:description" content="ret2syscall原理ret2syscall，即控制程序执行系统调用，可直接突破NX保护，获取 shell。 示例检测保护 ida查看源码依然是gets函数溢出 利用cyclic方法查到偏移量还是112 接着利用系统调用来获取shell 查找”pop eax; ret”命令：ROPgadget –binary ret2syscall –only “pop|ret” | grep “eax” 查">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://www.kk-blog.top/img%5Cpage2.jpg">
+<meta property="og:image" content="https://pic.imgdb.cn/item/63ede4faf144a0100701c905.png">
+<meta property="og:image" content="https://pic.imgdb.cn/item/63ede589f144a01007028cbb.png">
+<meta property="og:image" content="https://pic.imgdb.cn/item/63ede698f144a01007043373.png">
+<meta property="og:image" content="https://pic.imgdb.cn/item/63ede7bdf144a0100706266d.png">
+<meta property="og:image" content="https://pic.imgdb.cn/item/63ede8bbf144a010070779dc.png">
+<meta property="og:image" content="https://pic.imgdb.cn/item/63ede95cf144a0100708449b.png">
+<meta property="og:image" content="https://pic.imgdb.cn/item/63edea55f144a010070a35cc.png">
 <meta property="article:published_time" content="2023-02-16T08:30:00.000Z">
-<meta property="article:modified_time" content="2023-04-08T13:51:53.008Z">
+<meta property="article:modified_time" content="2023-04-08T13:54:21.413Z">
 <meta property="article:author" content="Xkeo">
 <meta property="article:tag" content="pwn">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://www.kk-blog.top/img%5Cpage2.jpg">
+<meta name="twitter:image" content="https://pic.imgdb.cn/item/63ede4faf144a0100701c905.png">
   
   
     <meta name="referrer" content="no-referrer-when-downgrade">
@@ -224,7 +230,7 @@
   
 
 <div id="banner" class="banner" parallax=true
-     style="background: url('/img%5Ctopimg.jpg') no-repeat center center; background-size: cover;">
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
   <div class="full-bg-img">
     <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
       <div class="banner-text text-center fade-in-up">
@@ -406,6 +412,29 @@
 
 
 
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2023/04/08/%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%BC%8F%E6%B4%9E/" title="格式化字符串漏洞">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">格式化字符串漏洞</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/02/14/ret2libc/" title="ret2libc">
+                        <span class="hidden-mobile">ret2libc</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
               
             </div>
 
