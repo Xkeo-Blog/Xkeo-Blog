@@ -13,7 +13,7 @@
     
     <categories>
       
-      <category>pwn学习笔记</category>
+      <category>pwn-堆</category>
       
     </categories>
     
@@ -38,7 +38,7 @@
     
     <categories>
       
-      <category>pwn学习笔记</category>
+      <category>pwn-栈</category>
       
     </categories>
     
@@ -65,7 +65,7 @@
     
     <categories>
       
-      <category>pwn学习笔记</category>
+      <category>pwn基础</category>
       
     </categories>
     
@@ -92,7 +92,7 @@
     
     <categories>
       
-      <category>pwn学习笔记</category>
+      <category>pwn-格式化字符串</category>
       
     </categories>
     
@@ -100,8 +100,6 @@
     <tags>
       
       <tag>pwn</tag>
-      
-      <tag>漏洞</tag>
       
     </tags>
     
@@ -119,7 +117,7 @@
     
     <categories>
       
-      <category>pwn学习笔记</category>
+      <category>pwn入门</category>
       
     </categories>
     
@@ -144,7 +142,7 @@
     
     <categories>
       
-      <category>pwn学习笔记</category>
+      <category>pwn入门</category>
       
     </categories>
     
