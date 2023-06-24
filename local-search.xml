@@ -134,5 +134,30 @@
   
   
   
+  <entry>
+    <title>堆相关数据结构</title>
+    <link href="/2023/04/01/%E5%A0%86%E7%9B%B8%E5%85%B3%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
+    <url>/2023/04/01/%E5%A0%86%E7%9B%B8%E5%85%B3%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</url>
+    
+    <content type="html"><![CDATA[<h1 id="堆相关数据结构"><a href="#堆相关数据结构" class="headerlink" title="堆相关数据结构"></a>堆相关数据结构</h1><h2 id="malloc-chunk"><a href="#malloc-chunk" class="headerlink" title="malloc_chunk"></a>malloc_chunk</h2><p>在程序的执行的过程中，由malloc申请的内存为chunk。内存在ptmalloc内部用malloc_hook结构体来表示。当申请的chunk</p><p>被free后，根据size大小会被加入到相应的空闲管理列表中。</p><p>无论一个chunk大小如何 ，处于分配状态还是释放状态，它们都使用一个统一的的结构。</p><h3 id="结构"><a href="#结构" class="headerlink" title="结构"></a>结构</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">/*</span><br><span class="hljs-comment">  This struct declaration is misleading (but accurate and necessary).</span><br><span class="hljs-comment">  It declares a &quot;view&quot; into memory allowing access to necessary</span><br><span class="hljs-comment">  fields at known offsets from a given base. See explanation below.</span><br><span class="hljs-comment">*/</span><br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">malloc_chunk</span> &#123;</span><br><br>  INTERNAL_SIZE_T      prev_size;  <span class="hljs-comment">/* Size of previous chunk (if free).  */</span><br>  INTERNAL_SIZE_T      size;       <span class="hljs-comment">/* Size in bytes, including overhead. */</span><br><br>  <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">malloc_chunk</span>* <span class="hljs-title">fd</span>;</span>         <span class="hljs-comment">/* double links -- used only if free. */</span><br>  <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">malloc_chunk</span>* <span class="hljs-title">bk</span>;</span><br><br>  <span class="hljs-comment">/* Only used for large blocks: pointer to next larger size.  */</span><br>  <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">malloc_chunk</span>* <span class="hljs-title">fd_nextsize</span>;</span> <span class="hljs-comment">/* double links -- used only if free. */</span><br>  <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">malloc_chunk</span>* <span class="hljs-title">bk_nextsize</span>;</span><br>&#125;;<br></code></pre></td></tr></table></figure><p>解释：</p><ol><li><p>prev_size，如果该chunk物理相邻的前一地址chunk是空闲的，那么该字段记录的是前一个chunk的大小（包括chunk头）。否则，该字段用来储存物理相邻的前一个chunk的数据。</p></li><li><p>size，chunk的大小，大小必须是2*SIZE_SZ的整数倍。</p></li><li><p>fd，bk。chunk处于分配状态时，从fd字段开始是用户的数据。chunk空闲时，会被添加到对应的空闲管理链表中，此时，fd和bk才有效，fd指向下一个（非物理相邻）空闲的chunk；bk指向上一个（非物理相邻）空闲的chunk。</p></li><li><p>fd_nextsize，bk_nextsize，也是只有chunk空闲的时候才使用，用于较大的chunk（large chunk），fd_nextsize指向前一个与当前chunk大小不同的第一个空闲块，不包含bin指针；bk_nextsize指向后一个与当前chunk大小不同的第一个空闲块，不包含bin指针。</p><p>注意：32位系统中，SIZE_SZ是4，64位系统中，SIZE_SZ是8。故size字段低三位对chunk的大小没有影响，他们从高到低分别表示：</p><ol><li>NON_MAIN_ARENA，记录当前chunk是否不属于主线程，1表示不属于，0表示属于。</li><li>IS_MAPPED，记录当前chunk是否由mmap分配。</li><li>PREV_INUSE，记录前一个chunk块是否被分配。一般来说，堆中第一个被分配的内存块的size字段的P位都会被设置为1，以便防止访问前面的非法内存。当一个chunk的size的P位设置为0时，我们能通过prev_size字段来获取上一个chunk的大小以及地址。这也方便进行空闲chunk之间的合并。</li></ol></li></ol><h3 id="示意图"><a href="#示意图" class="headerlink" title="示意图"></a>示意图</h3><p> 分配的chunk：</p><p><img src="https://cdn.staticaly.com/gh/Xkeo-Blog/pic_bed@main/1.png" alt="1"></p><p>注：mem表示用户的指针</p><p>空闲的chunk：</p><p><img src="https://cdn.staticaly.com/gh/Xkeo-Blog/pic_bed@main/2.png" alt="2"></p><h2 id="bin"><a href="#bin" class="headerlink" title="bin"></a>bin</h2><p>后续写</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>pwn学习笔记</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>pwn</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
   
 </search>
